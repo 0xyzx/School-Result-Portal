@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - School Results</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .tab-button.active {
+            border-bottom: 2px solid #3b82f6;
+            color: #3b82f6;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <!-- Login Screen -->
+    <div id="login-screen" class="min-h-screen flex items-center justify-center">
+        <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-2xl shadow-lg">
+            <div class="text-center">
+                <h1 class="text-3xl font-bold text-gray-800">Admin Login</h1>
+                <p class="text-gray-500">Access the result management panel.</p>
+            </div>
+            <div id="login-error" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg"></div>
+            <form id="login-form" class="space-y-6">
+                <div>
+                    <label for="email" class="text-sm font-medium text-gray-700">Email</label>
+                    <input id="email" type="email" required class="w-full px-4 py-2 mt-2 text-gray-700 bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label for="password" class="text-sm font-medium text-gray-700">Password</label>
+                    <input id="password" type="password" required class="w-full px-4 py-2 mt-2 text-gray-700 bg-gray-100 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300 flex items-center justify-center">Login</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Admin Panel -->
+    <div id="admin-panel" class="hidden">
+        <header class="bg-white shadow-md">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
+                <button id="logout-button" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">Logout</button>
+            </div>
+        </header>
+
+        <main class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+            <div class="border-b border-gray-200 mb-6">
+                <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                    <button class="tab-button active" data-tab="students">Manage Students</button>
+                    <button class="tab-button" data-tab="results">Manage Results</button>
+                    <button class="tab-button" data-tab="announcements">Announcements</button>
+                </nav>
+            </div>
+
+            <div id="tab-content">
+                <!-- Students Tab -->
+                <div id="students-tab" class="tab-pane active">
+                    <div class="bg-white p-6 rounded-lg shadow-sm">
+                        <h2 id="student-form-title" class="text-xl font-semibold mb-4">Add New Student</h2>
+                        <form id="add-student-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-end">
+                             <input id="student-id" type="hidden">
+                            <div>
+                                <label for="student-name" class="block text-sm font-medium">Full Name</label>
+                                <input type="text" id="student-name" class="w-full mt-1 p-2 border rounded-md" required>
+                            </div>
+                            <div>
+                                <label for="roll-number" class="block text-sm font-medium">Roll Number</label>
+                                <input type="text" id="roll-number" class="w-full mt-1 p-2 border rounded-md" required>
+                            </div>
+                            <div>
+                                <label for="student-class" class="block text-sm font-medium">Class</label>
+                                <input type="text" id="student-class" class="w-full mt-1 p-2 border rounded-md" required>
+                            </div>
+                            <div class="lg:col-span-2">
+                                <label for="student-photo-url" class="block text-sm font-medium">Student Photo URL</label>
+                                <input type="url" id="student-photo-url" class="w-full mt-1 p-2 border rounded-md" placeholder="https://example.com/image.png">
+                            </div>
+                            <div id="form-buttons" class="flex items-center gap-4">
+                                <button type="submit" id="submit-student-btn" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 flex items-center justify-center gap-2">
+                                    <span id="submit-student-btn-text">Add Student</span>
+                                    <div id="student-loader" class="loader hidden"></div>
+                                </button>
+                                <button type="button" id="cancel-edit-btn" class="w-full bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600 hidden">Cancel</button>
+                            </div>
+                        </form>
+                        <hr class="my-6">
+                        <h2 class="text-xl font-semibold mb-4">Student List</h2>
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead><tr class="bg-gray-100 text-left"><th class="p-3">Photo</th><th class="p-3">Name</th><th class="p-3">Roll No.</th><th class="p-3">Class</th><th class="p-3">Actions</th></tr></thead>
+                                <tbody id="students-list"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results Tab -->
+                <div id="results-tab" class="tab-pane hidden">
+                    <div class="bg-white p-6 rounded-lg shadow-sm">
+                        <h2 class="text-xl font-semibold mb-4">Upload/Update Result</h2>
+                        <form id="result-upload-form">
+                            <div class="mb-4">
+                                <label for="result-student-select" class="block text-sm font-medium">Select Student</label>
+                                <select id="result-student-select" class="w-full mt-1 p-2 border rounded-md" required></select>
+                            </div>
+                            <hr class="my-6">
+                            <div id="subjects-container" class="space-y-4">
+                                <!-- Dynamic subject fields will be added here -->
+                            </div>
+                            <div class="flex justify-between items-center mt-4">
+                                <button type="button" id="add-subject-btn" class="bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600">Add Subject</button>
+                                <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 flex items-center justify-center gap-2">
+                                    <span id="submit-result-btn-text">Save Result</span>
+                                    <div id="result-loader" class="loader hidden"></div>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Announcements Tab -->
+                <div id="announcements-tab" class="tab-pane hidden">
+                     <div class="bg-white p-6 rounded-lg shadow-sm">
+                        <h2 class="text-xl font-semibold mb-4">Create Announcement</h2>
+                        <form id="announcement-form" class="space-y-4">
+                            <div>
+                                <label for="announcement-title" class="block text-sm font-medium">Title</label>
+                                <input type="text" id="announcement-title" class="w-full mt-1 p-2 border rounded-md" required>
+                            </div>
+                            <div>
+                                <label for="announcement-content" class="block text-sm font-medium">Content</label>
+                                <textarea id="announcement-content" rows="4" class="w-full mt-1 p-2 border rounded-md" required></textarea>
+                            </div>
+                            <button type="submit" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">Post Announcement</button>
+                        </form>
+                        <hr class="my-6">
+                        <h2 class="text-xl font-semibold mb-4">Posted Announcements</h2>
+                        <div id="announcements-list-admin" class="space-y-3"></div>
+                     </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Confirmation Modal -->
+    <div id="confirmation-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
+            <h2 id="modal-title" class="text-xl font-bold mb-4">Confirm Action</h2>
+            <p id="modal-text" class="mb-6">Are you sure?</p>
+            <div class="flex justify-end gap-4">
+                <button id="modal-cancel-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">
+                    Cancel
+                </button>
+                <button id="modal-confirm-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded">
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, collection, addDoc, doc, setDoc, deleteDoc, onSnapshot, query, orderBy, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyDX4QZxAoYg3lKQ_FWFUNyW0fsN3o0LGRQ",
+          authDomain: "result-fe1c5.firebaseapp.com",
+          projectId: "result-fe1c5",
+          storageBucket: "result-fe1c5.firebasestorage.app",
+          messagingSenderId: "690264860647",
+          appId: "1:690264860647:web:b3dde57cdc117df4367f42",
+          measurementId: "G-BJRKYYL682"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
+        // UI Elements
+        const loginScreen = document.getElementById('login-screen');
+        const adminPanel = document.getElementById('admin-panel');
+        const loginForm = document.getElementById('login-form');
+        const loginError = document.getElementById('login-error');
+        const logoutButton = document.getElementById('logout-button');
+        const addStudentForm = document.getElementById('add-student-form');
+        const studentsList = document.getElementById('students-list');
+        const studentFormTitle = document.getElementById('student-form-title');
+        const studentIdInput = document.getElementById('student-id');
+        const studentLoader = document.getElementById('student-loader');
+        const submitStudentBtnText = document.getElementById('submit-student-btn-text');
+        const cancelEditBtn = document.getElementById('cancel-edit-btn');
+        const resultStudentSelect = document.getElementById('result-student-select');
+        const subjectsContainer = document.getElementById('subjects-container');
+        const addSubjectBtn = document.getElementById('add-subject-btn');
+        const resultUploadForm = document.getElementById('result-upload-form');
+        const resultLoader = document.getElementById('result-loader');
+        const submitResultBtnText = document.getElementById('submit-result-btn-text');
+        const announcementForm = document.getElementById('announcement-form');
+        const announcementsListAdmin = document.getElementById('announcements-list-admin');
+        const confirmationModal = document.getElementById('confirmation-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalText = document.getElementById('modal-text');
+        const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+        const modalCancelBtn = document.getElementById('modal-cancel-btn');
+
+
+        // State
+        let isEditMode = false;
+        let studentsData = [];
+        let actionToConfirm = null;
+
+        // Auth Logic
+        onAuthStateChanged(auth, user => {
+            if (user) {
+                loginScreen.classList.add('hidden');
+                adminPanel.classList.remove('hidden');
+                loadStudents();
+                loadAnnouncements();
+            } else {
+                loginScreen.classList.remove('hidden');
+                adminPanel.classList.add('hidden');
+            }
+        });
+
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            signInWithEmailAndPassword(auth, email.value, password.value)
+                .catch(error => {
+                    loginError.textContent = error.message;
+                    loginError.classList.remove('hidden');
+                });
+        });
+
+        logoutButton.addEventListener('click', () => signOut(auth));
+
+        // Generic Confirmation Modal Logic
+        function showConfirmationModal(title, text, onConfirm) {
+            modalTitle.textContent = title;
+            modalText.textContent = text;
+            actionToConfirm = onConfirm;
+            confirmationModal.classList.remove('hidden');
+        }
+
+        modalCancelBtn.addEventListener('click', () => {
+            confirmationModal.classList.add('hidden');
+            actionToConfirm = null;
+        });
+
+        modalConfirmBtn.addEventListener('click', async () => {
+            if (actionToConfirm) {
+                await actionToConfirm();
+            }
+            confirmationModal.classList.add('hidden');
+            actionToConfirm = null;
+        });
+
+        // Tab Switching
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.add('hidden'));
+                document.getElementById(`${button.dataset.tab}-tab`).classList.remove('hidden');
+            });
+        });
+
+        // Student Management
+        function loadStudents() {
+            onSnapshot(query(collection(db, "students"), orderBy("name")), (snapshot) => {
+                studentsList.innerHTML = '';
+                resultStudentSelect.innerHTML = '<option value="">-- Select a Student --</option>';
+                studentsData = [];
+                snapshot.forEach(doc => {
+                    const student = { id: doc.id, ...doc.data() };
+                    studentsData.push(student);
+                    // Populate table
+                    const tr = document.createElement('tr');
+                    tr.className = "border-b";
+                    const photoUrl = student.photoUrl || 'https://placehold.co/60x60/e2e8f0/e2e8f0?text=';
+                    tr.innerHTML = `<td class="p-3"><img src="${photoUrl}" alt="${student.name}" class="w-12 h-12 rounded-full object-cover"></td><td class="p-3 font-medium">${student.name}</td><td class="p-3">${student.rollNumber}</td><td class="p-3">${student.class}</td><td class="p-3 space-x-3"><button class="text-blue-500 hover:underline edit-student" data-id="${doc.id}">Edit</button><button class="text-red-500 hover:underline delete-student" data-id="${doc.id}">Delete</button></td>`;
+                    studentsList.appendChild(tr);
+                    // Populate select dropdown
+                    const option = document.createElement('option');
+                    option.value = doc.id;
+                    option.textContent = `${student.name} - ${student.rollNumber}`;
+                    resultStudentSelect.appendChild(option);
+                });
+            });
+        }
+        
+        function resetStudentForm() {
+            isEditMode = false; addStudentForm.reset(); studentIdInput.value = '';
+            studentFormTitle.textContent = 'Add New Student'; submitStudentBtnText.textContent = 'Add Student';
+            cancelEditBtn.classList.add('hidden'); studentLoader.classList.add('hidden');
+            document.getElementById('submit-student-btn').disabled = false;
+        }
+
+        addStudentForm.addEventListener('submit', async e => {
+            e.preventDefault();
+            studentLoader.classList.remove('hidden');
+            submitStudentBtnText.textContent = isEditMode ? 'Updating...' : 'Adding...';
+            document.getElementById('submit-student-btn').disabled = true;
+
+            const name = document.getElementById('student-name').value;
+            const rollNumber = document.getElementById('roll-number').value;
+            const studentClass = document.getElementById('student-class').value;
+            const photoUrl = document.getElementById('student-photo-url').value;
+            const studentId = studentIdInput.value;
+
+            const studentData = { name, rollNumber, class: studentClass };
+            if (photoUrl) {
+                studentData.photoUrl = photoUrl;
+            } else {
+                studentData.photoUrl = null; // Clear the URL if the field is empty
+            }
+
+            try {
+                if (isEditMode) await updateDoc(doc(db, "students", studentId), studentData);
+                else await addDoc(collection(db, "students"), studentData);
+                resetStudentForm();
+            } catch (error) { console.error("Error saving student: ", error); }
+            finally {
+                studentLoader.classList.add('hidden');
+                document.getElementById('submit-student-btn').disabled = false;
+                 if (isEditMode) resetStudentForm();
+            }
+        });
+
+        studentsList.addEventListener('click', async e => {
+            const { target } = e; const id = target.dataset.id;
+            if (target.classList.contains('edit-student')) {
+                const student = studentsData.find(s => s.id === id);
+                if(student) {
+                    document.getElementById('student-name').value = student.name;
+                    document.getElementById('roll-number').value = student.rollNumber;
+                    document.getElementById('student-class').value = student.class;
+                    document.getElementById('student-photo-url').value = student.photoUrl || '';
+                    studentIdInput.value = id; isEditMode = true;
+                    studentFormTitle.textContent = 'Edit Student'; submitStudentBtnText.textContent = 'Update Student';
+                    cancelEditBtn.classList.remove('hidden'); window.scrollTo(0, 0);
+                }
+            }
+            if (target.classList.contains('delete-student')) {
+                showConfirmationModal(
+                    'Confirm Deletion',
+                    'Are you sure you want to delete this student and their result? This action cannot be undone.',
+                    async () => {
+                        try {
+                            await deleteDoc(doc(db, "students", id));
+                            await deleteDoc(doc(db, "results", id));
+                        } catch (error) { console.error("Error deleting student:", error); }
+                    }
+                );
+            }
+        });
+        cancelEditBtn.addEventListener('click', resetStudentForm);
+
+        // Result Management
+        function createSubjectField(subject = { name: '', total: 100, obtained: '' }) {
+            const div = document.createElement('div');
+            div.className = 'grid grid-cols-1 md:grid-cols-4 gap-4 items-center subject-field';
+            div.innerHTML = `
+                <input type="text" placeholder="Subject Name" value="${subject.name}" class="md:col-span-2 p-2 border rounded-md subject-name" required>
+                <input type="number" placeholder="Total Marks" value="${subject.total}" class="p-2 border rounded-md subject-total" required>
+                <input type="number" placeholder="Marks Obtained" value="${subject.obtained}" class="p-2 border rounded-md subject-obtained" required>
+                <button type="button" class="bg-red-500 text-white p-2 rounded-md hover:bg-red-600 remove-subject-btn">Remove</button>
+            `;
+            subjectsContainer.appendChild(div);
+        }
+        addSubjectBtn.addEventListener('click', () => createSubjectField());
+        subjectsContainer.addEventListener('click', e => {
+            if (e.target.classList.contains('remove-subject-btn')) e.target.closest('.subject-field').remove();
+        });
+        
+        resultStudentSelect.addEventListener('change', async e => {
+            const studentId = e.target.value;
+            subjectsContainer.innerHTML = '';
+            if (!studentId) return;
+            const resultRef = doc(db, "results", studentId);
+            const resultSnap = await getDoc(resultRef);
+            if(resultSnap.exists()) {
+                resultSnap.data().subjects.forEach(subject => createSubjectField(subject));
+            } else {
+                ['English', 'Mathematics', 'Science', 'Social Studies', 'Language'].forEach(name => createSubjectField({name, total: 100, obtained: ''}));
+            }
+        });
+
+        resultUploadForm.addEventListener('submit', async e => {
+            e.preventDefault();
+            const studentId = resultStudentSelect.value;
+            if (!studentId) { alert("Please select a student."); return; }
+            
+            resultLoader.classList.remove('hidden');
+            submitResultBtnText.textContent = "Saving...";
+            
+            const subjects = [];
+            document.querySelectorAll('.subject-field').forEach(field => {
+                subjects.push({
+                    name: field.querySelector('.subject-name').value,
+                    total: field.querySelector('.subject-total').value,
+                    obtained: field.querySelector('.subject-obtained').value,
+                });
+            });
+            
+            try {
+                await setDoc(doc(db, "results", studentId), { subjects });
+                alert("Result saved successfully!");
+                resultUploadForm.reset();
+                subjectsContainer.innerHTML = '';
+            } catch(error) { console.error("Error saving result:", error); }
+            finally { resultLoader.classList.add('hidden'); submitResultBtnText.textContent = "Save Result"; }
+        });
+
+        // Announcement Management
+        function loadAnnouncements() {
+            onSnapshot(query(collection(db, "announcements"), orderBy("createdAt", "desc")), snapshot => {
+                announcementsListAdmin.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const ann = doc.data();
+                    const div = document.createElement('div');
+                    div.className = 'bg-gray-50 p-3 rounded-md border flex justify-between items-start';
+                    div.innerHTML = `<div><p class="font-semibold">${ann.title}</p><p class="text-sm text-gray-600">${ann.content}</p></div><button data-id="${doc.id}" class="delete-announcement-btn text-red-500 hover:text-red-700 font-bold">X</button>`;
+                    announcementsListAdmin.appendChild(div);
+                });
+            });
+        }
+        
+        announcementForm.addEventListener('submit', async e => {
+            e.preventDefault();
+            const title = document.getElementById('announcement-title').value;
+            const content = document.getElementById('announcement-content').value;
+            try {
+                await addDoc(collection(db, "announcements"), { title, content, createdAt: serverTimestamp() });
+                announcementForm.reset();
+            } catch (error) { console.error("Error adding announcement:", error); }
+        });
+
+        announcementsListAdmin.addEventListener('click', async e => {
+            if(e.target.classList.contains('delete-announcement-btn')) {
+                const id = e.target.dataset.id;
+                showConfirmationModal(
+                    'Confirm Deletion',
+                    'Are you sure you want to delete this announcement?',
+                    async () => {
+                        await deleteDoc(doc(db, "announcements", id));
+                    }
+                );
+            }
+        });
+    </script>
+</body>
+</html>
+
